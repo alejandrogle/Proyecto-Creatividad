@@ -6,9 +6,11 @@ document.getElementById("stock-form").addEventListener("submit", function (event
     const stockSymbol = document.getElementById("stock-symbol").value.trim().toUpperCase();
     const stockDataDiv = document.getElementById("stock-data");
     const chartContainer = document.getElementById("chart-container");
+    const predictionContainer = document.getElementById("prediction-container");
 
     stockDataDiv.innerHTML = "<p>Cargando datos...</p>";
     chartContainer.style.display = "none"; // Ocultar el gráfico hasta que se cargue.
+    predictionContainer.style.display = "none"; // Ocultar predicción por defecto.
 
     const apiUrl = `https://apidojo-yahoo-finance-v1.p.rapidapi.com/stock/get-fundamentals?region=US&symbol=${stockSymbol}&lang=en-US&modules=assetProfile%2CsummaryProfile%2CfundProfile%2CquoteType`;
     const options = {
@@ -44,11 +46,11 @@ document.getElementById("stock-form").addEventListener("submit", function (event
                 <p><strong>Sitio web:</strong> <a href="${assetProfile.website}" target="_blank">${assetProfile.website || "No disponible"}</a></p>
             `;
 
-            // Cargar datos para el gráfico
+            // Cargar datos para el gráfico y la predicción
             loadStockChart(stockSymbol);
         })
         .catch((error) => {
-            stockDataDiv.innerHTML = `<p>Error al cargar los datos: ${error.message}</p>`;
+            stockDataDiv.innerHTML = `<p style="color: red;">Error al cargar los datos: ${error.message}</p>`;
         });
 });
 
@@ -113,8 +115,54 @@ function loadStockChart(stockSymbol) {
             });
 
             document.getElementById("chart-container").style.display = "block";
+
+            // Calcular predicción y mostrar indicador
+            predictStockPrice(prices);
         })
         .catch((error) => {
             document.getElementById("stock-data").innerHTML += `<p style="color: red;">Error al cargar el gráfico: ${error.message}</p>`;
         });
+}
+
+function predictStockPrice(prices) {
+    // Calcular regresión lineal
+    const days = Array.from({ length: prices.length }, (_, i) => i);
+    const regression = linearRegression(days, prices);
+
+    // Predicción para el próximo día
+    const nextDay = days.length;
+    const predictedPrice = regression.slope * nextDay + regression.intercept;
+
+    // Mostrar predicción e indicador
+    const predictionContainer = document.getElementById("prediction-container");
+    predictionContainer.style.display = "block";
+
+    const predictedPriceElement = document.getElementById("predicted-price");
+    const indicatorElement = document.getElementById("indicator");
+
+    predictedPriceElement.textContent = `${predictedPrice.toFixed(2)} USD`;
+
+    if (predictedPrice > prices[prices.length - 1]) {
+        indicatorElement.style.color = "green";
+        indicatorElement.textContent = "⬆️ Subirá";
+    } else {
+        indicatorElement.style.color = "red";
+        indicatorElement.textContent = "⬇️ Bajará";
+    }
+}
+
+function linearRegression(X, Y) {
+    const n = X.length;
+    const meanX = X.reduce((a, b) => a + b) / n;
+    const meanY = Y.reduce((a, b) => a + b) / n;
+
+    let num = 0, den = 0;
+    for (let i = 0; i < n; i++) {
+        num += (X[i] - meanX) * (Y[i] - meanY);
+        den += (X[i] - meanX) ** 2;
+    }
+
+    const slope = num / den; // Pendiente
+    const intercept = meanY - slope * meanX; // Intersección
+    return { slope, intercept };
 }
