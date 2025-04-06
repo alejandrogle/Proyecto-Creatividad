@@ -1,4 +1,4 @@
-let stockChart = null; // Variable para almacenar el gráfico
+let stockChart = null; 
 
 document.getElementById("stock-form").addEventListener("submit", function (event) {
     event.preventDefault();
@@ -156,7 +156,7 @@ function linearRegression(X, Y) {
         den += (X[i] - meanX) ** 2;
     }
 
-    const slope = num / den; // Pendiente
-    const intercept = meanY - slope * meanX; // Intersección
+    const slope = num / den; 
+    const intercept = meanY - slope * meanX; 
     return { slope, intercept };
 }
